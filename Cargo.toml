@@ -1,0 +1,9 @@
+[package]
+name = "loxis"
+version = "0.1.0"
+authors = ["Mikael Gueck <gumi@iki.fi>"]
+edition = "2018"
+
+[dependencies]
+parquet = "4.3.0"
+parquet-format = "4.0.0"
