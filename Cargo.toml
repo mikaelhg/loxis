@@ -5,6 +5,6 @@ authors = ["Mikael Gueck <gumi@iki.fi>"]
 edition = "2018"
 
 [dependencies]
-parquet = "6.0.0"
-arrow = "6.0.0"
-parquet-format = "4.0.0"
+parquet = "24.0.0"
+arrow = "24.0.0"
+#parquet-format = "4.0.0"

@@ -3,5 +3,5 @@
 extern crate parquet;
 
 fn main() {
-    println!("Hello, world!");
+    println!("Hello, worlds!");
 }
