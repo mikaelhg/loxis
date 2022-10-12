@@ -1,3 +1,5 @@
+mod structs;
+
 #[allow(unused, dead_code)]
 pub mod px_parser {
 
@@ -5,45 +7,7 @@ pub mod px_parser {
     use std::io::{Read, SeekFrom};
     use std::io::prelude::*;
     use std::ptr::null;
-
-    pub struct PxRow {
-        pub keyword: PxKeyword,
-        pub value: PxValue,
-    }
-
-    pub struct PxValue {
-        pub number_value: Option<i32>,
-        pub string_value: Option<String>,
-        pub list_value: Option<Vec<String>>,
-    }
-
-    pub struct PxKeyword {
-        pub keyword: String,
-        pub language: Option<String>,
-        pub specifiers: Option<Vec<String>>,
-    }
-
-    pub struct RowAccumulator {
-        pub keyword:  String,
-        pub language: String,
-        pub subkey:   String,
-        pub subkeys:  Vec<String>,
-        pub value:    String,
-        pub values:   Vec<String>,
-    }
-
-    impl RowAccumulator {
-        pub const fn new() -> Self {
-            RowAccumulator {
-                keyword: "".to_string(),
-                language: "".to_string(),
-                subkey: "".to_string(),
-                subkeys: vec![],
-                value: "".to_string(),
-                values: vec![],
-            }
-        }
-    }
+    use crate::structs::structs::*;
 
     pub struct HeaderParseState {
         pub count:               u32,
@@ -73,17 +37,17 @@ pub mod px_parser {
 
     pub struct Parser<'a> {
         pub file: &'a File,
-        pub hps: &'a HeaderParseState,
-        pub row: &'a RowAccumulator,
+        pub hps: HeaderParseState,
+        pub row: RowAccumulator,
     }
 
     impl <'a> Parser<'a> {
 
         pub const fn new(f: &'a File) -> Self {
-            Parser {
+            Self {
                 file: f,
-                hps: &HeaderParseState::new(),
-                row: &RowAccumulator::new(),
+                hps: HeaderParseState::new(),
+                row: RowAccumulator::new(),
             }
         }
 
@@ -93,55 +57,27 @@ pub mod px_parser {
             Ok(buffer[0])
         }
 
+        pub fn read_px_metadata<T>(&mut self, f: &mut T)
+                                   -> std::io::Result<Vec<PxRow>>
+            where T: Read + Seek,
+        {
+            let mut result: Vec<PxRow> = vec![];
 
-    }
+            let mut buffer = [0; 4096];
+            f.seek(SeekFrom::Start(0));
 
-    pub fn read_px_metadata<T>(f: &mut T)
-                               -> std::io::Result<Vec<PxRow>>
-        where T: Read + Seek,
-    {
-        let mut result: Vec<PxRow> = Vec::new();
-        let mut row = PxRow {
-            keyword: PxKeyword {
-                keyword: "FOO".to_string(),
-                language: None,
-                specifiers: None
-            },
-            value: PxValue {
-                number_value: Some(123),
-                string_value: None,
-                list_value: None
+            let size = f.read(&mut buffer)?;
+            for i in 0 .. size {
+                self.parse_header_character(buffer[i]);
             }
-        };
-        result.push(row);
-        let mut buffer = [0; 4096];
-        f.seek(SeekFrom::Start(0));
 
-        let size = f.read(&mut buffer)?;
-        for i in 0 .. size {
-            self.parse_header_character(buffer[i]);
+            Ok(result)
         }
 
+        fn parse_header_character(&self, c: u8) {
+            todo!()
+        }
 
-        Ok(result)
-    }
-
-    fn read_px_row<T>(f: &mut T)
-                      -> Result<PxRow, String>
-        where T: Read + Seek,
-    {
-        Err("nope".to_string())
-    }
-
-    fn read_px_keyword<F: Read + Seek>(f: &mut F) -> Result<PxKeyword, String> {
-        let in_subkey = false;
-        let subkey: Vec<String> = Vec::new();
-
-        Err("nope".to_string())
-    }
-
-    fn read_px_value<F: Read + Seek>(f: &mut F) -> Result<PxValue, String> {
-        Err("nope".to_string())
     }
 
 }

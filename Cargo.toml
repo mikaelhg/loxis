@@ -2,7 +2,7 @@
 name = "loxis"
 version = "0.1.0"
 authors = ["Mikael Gueck <gumi@iki.fi>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 parquet = "24.0.0"
