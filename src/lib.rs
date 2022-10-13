@@ -1,4 +1,4 @@
-mod structs;
+pub mod structs;
 
 #[allow(unused, dead_code)]
 pub mod px_parser {
@@ -8,6 +8,8 @@ pub mod px_parser {
     use std::io::prelude::*;
     use std::ptr::null;
     use crate::structs::structs::*;
+
+    const C_DATA: [u8; 4] = [b'D', b'A', b'T', b'A'];
 
     pub struct HeaderParseState {
         pub count:               u32,
@@ -22,7 +24,7 @@ pub mod px_parser {
 
     impl HeaderParseState {
         pub const fn new() -> Self {
-            HeaderParseState {
+            Self {
                 count: 0,
                 quotes: 0,
                 semicolons: 0,
@@ -35,19 +37,21 @@ pub mod px_parser {
         }
     }
 
-    pub struct Parser<'a> {
-        pub file: &'a File,
+    pub struct Parser {
+        pub file: File,
         pub hps: HeaderParseState,
         pub row: RowAccumulator,
+        pub headers: Vec<PxRow>,
     }
 
-    impl <'a> Parser<'a> {
+    impl Parser {
 
-        pub const fn new(f: &'a File) -> Self {
+        pub const fn new(f: File) -> Self {
             Self {
                 file: f,
                 hps: HeaderParseState::new(),
                 row: RowAccumulator::new(),
+                headers: vec![],
             }
         }
 
@@ -57,25 +61,112 @@ pub mod px_parser {
             Ok(buffer[0])
         }
 
-        pub fn read_px_metadata<T>(&mut self, f: &mut T)
-                                   -> std::io::Result<Vec<PxRow>>
-            where T: Read + Seek,
-        {
-            let mut result: Vec<PxRow> = vec![];
-
+        pub fn read_px_metadata(&mut self) -> std::io::Result<Vec<PxRow>> {
             let mut buffer = [0; 4096];
-            f.seek(SeekFrom::Start(0));
+            self.file.seek(SeekFrom::Start(0));
 
-            let size = f.read(&mut buffer)?;
-            for i in 0 .. size {
-                self.parse_header_character(buffer[i]);
+            loop {
+                match self.file.read(&mut buffer) {
+                    Result::Ok(0) => {
+                        break;
+                    },
+                    Result::Ok(size) => {
+                        for i in 0 .. size {
+                            self.parse_header_character(buffer[i]);
+                        }
+                    },
+                    Result::Err(e) => {
+                        break;
+                    }
+                }
             }
 
-            Ok(result)
+            Ok(self.headers.clone())
         }
 
-        fn parse_header_character(&self, c: u8) {
-            todo!()
+        fn parse_header_character(&mut self, c: u8) -> bool {
+            let in_quotes = self.hps.quotes % 2 == 1;
+            let in_parenthesis = self.hps.parenthesis_open > self.hps.parenthesis_close;
+            let in_key = self.hps.semicolons == self.hps.equals;
+            let in_language = in_key && self.hps.squarebracket_open > self.hps.squarebracket_close;
+            let in_subkey = in_key && in_parenthesis;
+
+            if c == b'"' {
+                self.hps.quotes += 1;
+
+            } else if (c == b'\n' || c == b'\r') && in_quotes {
+                return true; // true, errors.New("there can't be newlines inside quoted strings")
+
+            } else if (c == b'\n' || c == b'\r') && !in_quotes {
+                return false; // false, nil
+
+            } else if c == b'[' && in_key && !in_quotes {
+                self.hps.squarebracket_open += 1;
+
+            } else if c == b']' && in_key && !in_quotes {
+                self.hps.squarebracket_close += 1;
+
+            } else if c == b'(' && in_key && !in_quotes {
+                self.hps.parenthesis_open += 1;
+
+            } else if c == b'(' && !in_key && !in_quotes {
+                // TLIST opening quote
+                self.hps.parenthesis_open += 1;
+                self.row.value.push(c);
+
+            } else if c == b')' && in_key && !in_quotes {
+                self.hps.parenthesis_close += 1;
+                self.row.subkeys.push(self.row.subkey.clone());
+                self.row.subkey = vec![];
+
+            } else if c == b')' && !in_key && !in_quotes {
+                // TLIST closing quote
+                self.hps.parenthesis_close += 1;
+                self.row.value.push(c);
+
+            } else if c == b',' && in_subkey && !in_quotes {
+                self.row.subkeys.push(self.row.subkey.clone());
+                self.row.subkey = vec![];
+
+            } else if c == b',' && !in_key && !in_quotes && !in_parenthesis {
+                self.row.values.push(self.row.value.clone());
+                self.row.value = vec![];
+
+            } else if c == b'=' && !in_key && !in_quotes {
+                return true; // true, errors.New("found a second equals sign without a matching semicolon, unexpected keyword terminator")
+
+            } else if c == b'=' && in_key && !in_quotes {
+                if self.row.keyword == C_DATA {
+                    return true; // true, nil
+                }
+                self.hps.equals += 1;
+
+            } else if c == b';' && in_key && !in_quotes {
+                return true; // true, errors.New("found a semicolon without a matching equals sign, value terminator without keyword terminator")
+
+            } else if c == b';' && !in_key && !in_quotes {
+                if self.row.value.len() > 0 {
+                    self.row.values.push(self.row.value.clone());
+                }
+                self.hps.semicolons += 1;
+                self.headers.push(self.row.to_row());
+                self.row = RowAccumulator::new();
+                return false; // false, nil
+
+            } else if in_subkey {
+                self.row.subkey.push(c);
+
+            } else if in_language {
+                self.row.language.push(c);
+
+            } else if in_key {
+                self.row.keyword.push(c);
+
+            } else {
+                self.row.value.push(c);
+            }
+
+            return false;
         }
 
     }
