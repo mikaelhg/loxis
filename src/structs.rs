@@ -23,17 +23,33 @@ pub mod structs {
             }
         }
         pub fn to_value(&self) -> PxValue {
+            let lv: Vec<String> = self.values.iter()
+                .map(|bl| bl.iter().map(|cu| char::from(*cu)).collect::<String>())
+                .collect();
             PxValue {
                 number_value: None,
                 string_value: None,
-                list_value: self.values.into_iter().map(|x| x).collect(),
+                list_value: Some(lv),
             }
         }
         pub fn to_keyword(&self) -> PxKeyword {
+            let kw = self.keyword.iter().map(|cu| char::from(*cu)).collect::<String>();
+            let lng: Option<String> = if self.language.is_empty() {
+                None
+            } else {
+                Some(self.language.iter().map(|cu| char::from(*cu)).collect::<String>())
+            };
+            let sks: Option<Vec<String>> = if self.subkeys.is_empty() {
+                None
+            } else {
+                Some(self.subkeys.iter()
+                    .map(|bl| bl.iter().map(|cu| char::from(*cu)).collect::<String>())
+                    .collect())
+            };
             PxKeyword {
-                keyword: "".to_string(),
-                language: None,
-                subkeys: None,
+                keyword: kw,
+                language: lng,
+                subkeys: sks,
             }
         }
         pub fn to_row(&self) -> PxRow {

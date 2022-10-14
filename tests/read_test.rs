@@ -12,13 +12,7 @@ mod read_tests {
     fn test_file() -> std::io::Result<()> {
         let mut file = File::open("../gpcaxis/data/010_kats_tau_101.px")?;
         let mut parser = Parser::new(file);
-        let mut note = PxKeyword {
-            keyword: "NOTE".to_string(),
-            language: Some("fi".to_string()),
-            subkeys: None,
-        };
-        println!("note: {:?}[{:?}]", note.keyword, note.language);
-        assert_eq!("NOTE", note.keyword);
+        // assert_eq!("NOTE", note.keyword);
 
         parser.read_px_metadata();
         println!("headers: {:?}", parser.headers);
