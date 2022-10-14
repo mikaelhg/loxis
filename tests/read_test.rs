@@ -6,7 +6,7 @@ mod read_tests {
     use std::io::BufReader;
     use std::io::prelude::*;
     use loxis::px_parser::Parser;
-    use loxis::structs::structs::*;
+    use loxis::structs::*;
 
     #[test]
     fn test_file() -> std::io::Result<()> {

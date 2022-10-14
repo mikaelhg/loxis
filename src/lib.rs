@@ -1,4 +1,5 @@
 pub mod structs;
+pub mod cartesian_product;
 
 #[allow(unused, dead_code)]
 pub mod px_parser {
@@ -7,7 +8,8 @@ pub mod px_parser {
     use std::io::{Read, SeekFrom, BufReader};
     use std::io::prelude::*;
     use std::ptr::null;
-    use crate::structs::structs::*;
+    use crate::cartesian_product::CartesianProduct;
+    use crate::structs::*;
 
     const C_DATA: [u8; 4] = [b'D', b'A', b'T', b'A'];
 
@@ -96,6 +98,8 @@ pub mod px_parser {
             let heading_values: Vec<Vec<String>> = heading.iter()
                 .map(|x| values_header(x)).collect();
             let heading_width = heading.len();
+
+            let mut heading_flattener = CartesianProduct::new(&heading_values);
 
             println!("stub: {:?}", stub);
             // println!("stub_values: {:?}", stub_values);
