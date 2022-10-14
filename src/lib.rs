@@ -55,7 +55,7 @@ pub mod px_parser {
             }
         }
 
-        pub fn read_px_metadata(&mut self) -> std::io::Result<()> {
+        pub fn parse_header(&mut self) -> std::io::Result<()> {
             let mut buffer = [0; 4096];
             self.file.seek(SeekFrom::Start(0));
 

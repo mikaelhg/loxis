@@ -14,7 +14,7 @@ mod read_tests {
         let mut parser = Parser::new(file);
         // assert_eq!("NOTE", note.keyword);
 
-        parser.read_px_metadata();
+        parser.parse_header();
         println!("headers: {:?}", parser.headers);
 
         Ok(())
