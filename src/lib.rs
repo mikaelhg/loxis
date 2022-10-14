@@ -59,20 +59,21 @@ pub mod px_parser {
             let mut buffer = [0; 4096];
             self.file.seek(SeekFrom::Start(0));
 
+            'outer:
             loop {
                 match self.file.read(&mut buffer) {
                     Result::Ok(0) => {
-                        break;
+                        break 'outer;
                     },
                     Result::Ok(size) => {
                         for i in 0 .. size {
                             if self.parse_header_character(buffer[i]) {
-                                break;
+                                break 'outer;
                             }
                         }
                     },
                     Result::Err(e) => {
-                        break;
+                        break 'outer;
                     }
                 }
             }
@@ -132,10 +133,10 @@ pub mod px_parser {
                 return true; // true, errors.New("found a second equals sign without a matching semicolon, unexpected keyword terminator")
 
             } else if c == b'=' && in_key && !in_quotes {
+                self.hps.equals += 1;
                 if self.row.keyword == C_DATA {
                     return true; // true, nil
                 }
-                self.hps.equals += 1;
 
             } else if c == b';' && in_key && !in_quotes {
                 return true; // true, errors.New("found a semicolon without a matching equals sign, value terminator without keyword terminator")
