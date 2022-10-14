@@ -4,7 +4,7 @@ pub mod structs;
 pub mod px_parser {
 
     use std::fs::File;
-    use std::io::{Read, SeekFrom};
+    use std::io::{Read, SeekFrom, BufReader};
     use std::io::prelude::*;
     use std::ptr::null;
     use crate::structs::structs::*;
@@ -38,7 +38,7 @@ pub mod px_parser {
     }
 
     pub struct Parser {
-        pub file: File,
+        pub reader: BufReader<File>,
         pub hps: HeaderParseState,
         pub row: RowAccumulator,
         pub headers: Vec<PxRow>,
@@ -46,9 +46,9 @@ pub mod px_parser {
 
     impl Parser {
 
-        pub const fn new(f: File) -> Self {
+        pub const fn new(r: BufReader<File>) -> Self {
             Self {
-                file: f,
+                reader: r,
                 hps: HeaderParseState::new(),
                 row: RowAccumulator::new(),
                 headers: vec![],
@@ -56,25 +56,25 @@ pub mod px_parser {
         }
 
         pub fn parse_header(&mut self) -> std::io::Result<()> {
-            let mut buffer = [0; 4096];
-            self.file.seek(SeekFrom::Start(0));
+            let mut buffer = [0; 1];
 
             'outer:
             loop {
-                match self.file.read(&mut buffer) {
+                match self.reader.read(&mut buffer) {
                     Result::Ok(0) => {
                         break 'outer;
                     },
-                    Result::Ok(size) => {
-                        for i in 0 .. size {
-                            if self.parse_header_character(buffer[i]) {
-                                break 'outer;
-                            }
+                    Result::Ok(1) => {
+                        if self.parse_header_character(buffer[0]) {
+                            break 'outer;
                         }
+                    },
+                    Result::Ok(_) => {
+                        break 'outer;
                     },
                     Result::Err(e) => {
                         break 'outer;
-                    }
+                    },
                 }
             }
 
@@ -83,9 +83,24 @@ pub mod px_parser {
 
         pub fn parse_data_dense(&mut self) -> std::io::Result<()> {
             let header = |kw: &str| self.headers.iter().find(|x| x.keyword == kw).unwrap().values.clone();
-            let values = header("VALUES");
+            let values_header = |sk: &str| self.headers.iter()
+                .find(|x| {x.keyword == "VALUES" && x.subkeys == Some(vec![sk.to_string()])})
+                .unwrap().values.clone();
+
             let stub = header("STUB");
+            let stub_values: Vec<Vec<String>> = stub.iter()
+                .map(|x| values_header(x)).collect();
+            let stub_width = stub.len();
+
             let heading = header("HEADING");
+            let heading_values: Vec<Vec<String>> = heading.iter()
+                .map(|x| values_header(x)).collect();
+            let heading_width = heading.len();
+
+            println!("stub: {:?}", stub);
+            // println!("stub_values: {:?}", stub_values);
+            println!("heading: {:?}", heading);
+
             Ok(())
         }
 

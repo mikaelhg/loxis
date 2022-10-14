@@ -11,11 +11,16 @@ mod read_tests {
     #[test]
     fn test_file() -> std::io::Result<()> {
         let mut file = File::open("../gpcaxis/data/010_kats_tau_101.px")?;
-        let mut parser = Parser::new(file);
-        // assert_eq!("NOTE", note.keyword);
+        let mut reader = BufReader::new(file);
+        let mut parser = Parser::new(reader);
 
         parser.parse_header();
-        println!("headers: {:?}", parser.headers);
+        parser.parse_data_dense();
+
+        // println!("headers: {:?}", parser.headers);
+        println!("headers.len: {:?}", parser.headers.len());
+
+        assert_eq!(81, parser.headers.len());
 
         Ok(())
     }
