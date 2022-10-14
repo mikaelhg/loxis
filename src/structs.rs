@@ -22,17 +22,7 @@ pub mod structs {
                 values: vec![],
             }
         }
-        pub fn to_value(&self) -> PxValue {
-            let lv: Vec<String> = self.values.iter()
-                .map(|bl| bl.iter().map(|cu| char::from(*cu)).collect::<String>())
-                .collect();
-            PxValue {
-                number_value: None,
-                string_value: None,
-                list_value: Some(lv),
-            }
-        }
-        pub fn to_keyword(&self) -> PxKeyword {
+        pub fn to_row(&self) -> PxRow {
             let kw = self.keyword.iter().map(|cu| char::from(*cu)).collect::<String>();
             let lng: Option<String> = if self.language.is_empty() {
                 None
@@ -43,41 +33,27 @@ pub mod structs {
                 None
             } else {
                 Some(self.subkeys.iter()
-                    .map(|bl| bl.iter().map(|cu| char::from(*cu)).collect::<String>())
-                    .collect())
+                .map(|bl| bl.iter().map(|cu| char::from(*cu)).collect::<String>())
+                .collect())
             };
-            PxKeyword {
+            let lv: Vec<String> = self.values.iter()
+                .map(|bl| bl.iter().map(|cu| char::from(*cu)).collect::<String>())
+                .collect();
+            PxRow {
                 keyword: kw,
                 language: lng,
                 subkeys: sks,
-            }
-        }
-        pub fn to_row(&self) -> PxRow {
-            PxRow {
-                keyword: self.to_keyword(),
-                value: self.to_value(),
+                values: lv,
             }
         }
     }
 
     #[derive(Clone, Debug)]
     pub struct PxRow {
-        pub keyword: PxKeyword,
-        pub value: PxValue,
-    }
-
-    #[derive(Clone, Debug)]
-    pub struct PxValue {
-        pub number_value: Option<i32>,
-        pub string_value: Option<String>,
-        pub list_value: Option<Vec<String>>,
-    }
-
-    #[derive(Clone, Debug)]
-    pub struct PxKeyword {
         pub keyword: String,
         pub language: Option<String>,
         pub subkeys: Option<Vec<String>>,
+        pub values: Vec<String>,
     }
 
 }
