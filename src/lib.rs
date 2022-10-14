@@ -81,6 +81,15 @@ pub mod px_parser {
             Ok(())
         }
 
+        pub fn parse_data_dense(&mut self) -> std::io::Result<()> {
+            let header = |kw: &str| self.headers.iter().find(|x| x.keyword == kw).unwrap().values.clone();
+            let values = header("VALUES");
+            let stub = header("STUB");
+            let heading = header("HEADING");
+            Ok(())
+        }
+
+
         fn parse_header_character(&mut self, c: u8) -> bool {
             let in_quotes = self.hps.quotes % 2 == 1;
             let in_parenthesis = self.hps.parenthesis_open > self.hps.parenthesis_close;
