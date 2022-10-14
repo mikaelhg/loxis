@@ -55,13 +55,7 @@ pub mod px_parser {
             }
         }
 
-        pub fn read_u8(&mut self) -> std::io::Result<u8> {
-            let mut buffer = [0; 1];
-            self.file.read(&mut buffer)?;
-            Ok(buffer[0])
-        }
-
-        pub fn read_px_metadata(&mut self) -> std::io::Result<Vec<PxRow>> {
+        pub fn read_px_metadata(&mut self) -> std::io::Result<()> {
             let mut buffer = [0; 4096];
             self.file.seek(SeekFrom::Start(0));
 
@@ -72,7 +66,9 @@ pub mod px_parser {
                     },
                     Result::Ok(size) => {
                         for i in 0 .. size {
-                            self.parse_header_character(buffer[i]);
+                            if self.parse_header_character(buffer[i]) {
+                                break;
+                            }
                         }
                     },
                     Result::Err(e) => {
@@ -81,7 +77,7 @@ pub mod px_parser {
                 }
             }
 
-            Ok(self.headers.clone())
+            Ok(())
         }
 
         fn parse_header_character(&mut self, c: u8) -> bool {
